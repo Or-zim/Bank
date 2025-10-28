@@ -16,7 +16,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     first_name: Mapped[str] = mapped_column(String(256), nullable=False)
     last_name: Mapped[str] = mapped_column(String(256), nullable=False)
-    password: Mapped[str] = mapped_column(String(12), unique=True, nullable=False)
+    password: Mapped[str] = mapped_column(String(12), nullable=False)
     date_joined: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     
     accounts: Mapped[List["Account"]] = relationship(back_populates="user")
@@ -28,6 +28,7 @@ class User(Base):
 class Account(Base):
     __tablename__ = "accounts"
     id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(256), nullable=False)
     account_number: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     balance: Mapped[float] = mapped_column(Float, default=0.0)
     date_created: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -52,4 +53,5 @@ class Transaction(Base):
     
     account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"))
     account: Mapped["Account"] = relationship(back_populates="transactions")
-    
+    def __repr__(self):
+        return f"Transaction(id={self.id!r}, amount={self.amount!r}, transaction_date={self.transaction_date!r}, description={self.description!r}, account_id={self.account_id})"
