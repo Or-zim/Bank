@@ -39,35 +39,42 @@ def transfer_of_funds_console(db: Session, user_id):
         POINT = 0
         dict_acc = {}
         accounts = get_accounts(db, user_id)
-        for acc in accounts:
-            POINT = POINT + 1
-            dict_acc[POINT] = acc
-            print(f'{POINT} | НАЗВАНИЕ: {acc.title} | НОМЕР СЧЕТА: {acc.account_number} | БАЛАНС: {acc.balance}')
-        while True:
-            change = int(input('Выберите с какого счета будет осуществлен перевод(напиши цифру указанную рядом с номером): '))
-            if change not in dict_acc.keys():
-                print('НЕВЕРНЫЙ ВЫБОР СЧЕТА, ПОВТОРИТЕ ПОПЫТКУ!')
-                continue
+        if accounts:
+            for acc in accounts:
+                POINT = POINT + 1
+                dict_acc[POINT] = acc
+                print(f'{POINT} | НАЗВАНИЕ: {acc.title} | НОМЕР СЧЕТА: {acc.account_number} | БАЛАНС: {acc.balance}')
+            while True:
+                change = int(input('Выберите с какого счета будет осуществлен перевод(напиши цифру указанную рядом с номером): '))
+                if change not in dict_acc.keys():
+                    print('НЕВЕРНЫЙ ВЫБОР СЧЕТА, ПОВТОРИТЕ ПОПЫТКУ!')
+                    continue
+                else:
+                    owner_acc = dict_acc[change].account_number
+                    print('Счет успешно выбран!')
+                    break
+            account_number = input('Введите номер счета получателя: ')
+            value = int(input('Введите сумму перевода: '))
+            balance = get_balance(db, owner_acc) # в аргументе передается номер счета отправителя чтобы проверить его на доступность средств для перевода
+            if value > balance:
+                print('Недостаточно средств для совершения перевода. Пополните баланс!')
+                return
             else:
-                owner_acc = dict_acc[change].account_number
-                print('Счет успешно выбран!')
-                break
-
-        account_number = input('Введите номер счета получателя: ')
-        value = int(input('Введите сумму перевода: '))
-        balance = get_balance(db, owner_acc) # в аргументе передается номер счета отправителя чтобы проверить его на доступность средств для перевода
-        if value > balance:
-            print('Недостаточно средств для совершения перевода. Пополните баланс!')
-            return
+                if check_account(db, account_number):
+                    transfer_of_funds(db, owner_acc, -value)#вычетание суммы
+                    transfer_of_funds(db, account_number, value)#прибавление 
+                    description = 'перевод'
+                    account_id = check_account(db, owner_acc)
+                    create_transaction(db, value, description, account_id.id)
+                    print('Перевод прошел успешно!')
+                    print(f'НОМЕР СЧЕТА ПОЛУЧАТЕЛЯ: {account_number}')
+                    return 
+                else:
+                    print('ОПЕРАЦИЯ ОТМЕНЕННА, ПОЛЬЗОВАТЕЛЯ С ТАКИМ СЧЕТОМ НЕ СУЩЕСТВУЕТ!')
+                    return
         else:
-            transfer_of_funds(db, owner_acc, -value)#вычетание суммы
-            transfer_of_funds(db, account_number, value)#прибавление 
-            description = 'перевод'
-            account_id = check_account(db, owner_acc)
-            create_transaction(db, value, description, account_id.id)
-            print('Перевод прошел успешно!')
-            print(f'НОМЕР СЧЕТА ПОЛУЧАТЕЛЯ: {account_number}')
-            return 
+            print('У вас нету активных счетов!')
+            return
     except Exception as e:
         print(f'ОШИБКА ПРИ ПЕРЕВОДЕ: {e}')
         return
@@ -76,7 +83,10 @@ def get_accounts_console(db: Session, user_id):
     """вывод всех счетов в консоле"""
     accounts = get_accounts(db, user_id)
     print("-----Ваши счета!-----")
-    for i in accounts:
-        print(f"НАЗВАНИЕ: {i.title} | НОМЕР: {i.account_number} | БАЛАНС: {i.balance}")
+    if accounts:
+        for i in accounts:
+            print(f"НАЗВАНИЕ: {i.title} | НОМЕР: {i.account_number} | БАЛАНС: {i.balance}")
+    else:
+        print('У вас нету активных счетов!')
     print('---------------------')
     return
